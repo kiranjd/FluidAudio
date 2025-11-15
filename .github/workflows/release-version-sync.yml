@@ -65,7 +65,8 @@ jobs:
 
       - name: Skip summary
         if: steps.prepare.outputs.skip == 'true'
-        run: echo "Skipping workflow: ${{ steps.prepare.outputs.reason }}"
+        run: |
+          echo "Skipping workflow: ${{ steps.prepare.outputs.reason }}"
 
       - name: Checkout main
         if: steps.prepare.outputs.skip != 'true'
