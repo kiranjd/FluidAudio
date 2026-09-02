@@ -5,17 +5,13 @@ import Foundation
 let package = Package(
     name: "FluidAudio",
     platforms: [
-        .macOS(.v14),
+        .macOS(.v13),
         .iOS(.v17),
     ],
     products: [
         .library(
             name: "FluidAudio",
             targets: ["FluidAudio"]
-        ),
-        .executable(
-            name: "fluidaudiocli",
-            targets: ["FluidAudioCLI"]
         ),
     ],
     dependencies: [],
@@ -25,22 +21,12 @@ let package = Package(
             dependencies: [
                 "FastClusterWrapper",
                 "MachTaskSelfWrapper",
-                "NemoTextProcessing",
             ],
             path: "Sources/FluidAudio",
             exclude: ["ASR/Parakeet/Unified/benchmark.md"],
             resources: [
-                // Keep .process: .copy of a Resources-named directory breaks Apple code signing on iOS.
                 .process("TTS/LuxTts/G2p/Resources")
             ]
-        ),
-        // Byte-exact NeMo text normalization (FST engine, all 7 languages).
-        // Prebuilt xcframework from FluidInference/text-processing-rs v0.3.0.
-        .binaryTarget(
-            name: "NemoTextProcessing",
-            url:
-                "https://github.com/FluidInference/text-processing-rs/releases/download/v0.3.0/NemoTextProcessing.xcframework.zip",
-            checksum: "76d0ee9a32b1ee2193231299180ca9bc4fc7e98794e771b3d55d66498352d85f"
         ),
         .target(
             name: "FastClusterWrapper",
@@ -52,21 +38,10 @@ let package = Package(
             path: "Sources/MachTaskSelfWrapper",
             publicHeadersPath: "include"
         ),
-        .executableTarget(
-            name: "FluidAudioCLI",
-            dependencies: ["FluidAudio"],
-            path: "Sources/FluidAudioCLI",
-            exclude: ["README.md"],
-            resources: [
-                .process("Utils/english.json")
-            ]
-        ),
         .testTarget(
             name: "FluidAudioTests",
-            dependencies: [
-                "FluidAudio",
-                "FluidAudioCLI",
-            ],
+            dependencies: ["FluidAudio"],
+            exclude: ["CLI"],
             resources: [
                 .process("TTS/LuxTts/Resources")
             ]

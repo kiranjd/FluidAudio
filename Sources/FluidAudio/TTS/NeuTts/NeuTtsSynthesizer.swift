@@ -165,6 +165,7 @@ struct NeuTtsSynthesizer {
             for (name, src) in [("kv_k_\(layer)", kPtr), ("kv_v_\(layer)", vPtr)] {
                 let base = src.advanced(by: layer * layerElements)
                 state.withMultiArray(for: name) { array in
+                    #if arch(arm64)
                     array.withUnsafeMutableBytes { rawBuffer, _ in
                         guard let dstBase = rawBuffer.baseAddress else { return }
                         let dst = dstBase.assumingMemoryBound(to: Float16.self)
@@ -172,6 +173,13 @@ struct NeuTtsSynthesizer {
                             dst[i] = Float16(base[i])
                         }
                     }
+                    #else
+                    // Core ML performs the fp32 -> fp16 conversion through
+                    // NSNumber on Intel, where Swift.Float16 is unavailable.
+                    for i in 0..<layerElements {
+                        array[i] = NSNumber(value: base[i])
+                    }
+                    #endif
                 }
             }
         }
@@ -227,8 +235,12 @@ struct NeuTtsSynthesizer {
                 dst.baseAddress!.update(from: ptr, count: count)
             }
         case .float16:
+            #if arch(arm64)
             let ptr = array.dataPointer.assumingMemoryBound(to: Float16.self)
             for i in 0..<count { out[i] = Float(ptr[i]) }
+            #else
+            for i in 0..<count { out[i] = array[i].floatValue }
+            #endif
         default:
             throw SynthesisError.missingOutput("unexpected dataType \(array.dataType.rawValue)")
         }

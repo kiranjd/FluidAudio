@@ -1,4 +1,6 @@
+#if canImport(CNemoTextProcessing)
 import CNemoTextProcessing
+#endif
 import Foundation
 
 /// Byte-exact NeMo text normalization via the bundled compiled-FST engine
@@ -29,8 +31,14 @@ public enum NemoTextNormalizer {
     /// library was built without the `fst-engine` feature — so this is always
     /// safe to call as a frontend pre-pass.
     public static func normalize(_ text: String, language: Language) -> String {
+#if canImport(CNemoTextProcessing)
         guard let ptr = nemo_tn_fst(text, language.rawValue) else { return text }
         defer { nemo_free_string(ptr) }
         return String(cString: ptr)
+#else
+        // Speakmac's ASR-only package variant omits the optional NeMo FST
+        // binary because it collides with the app's LiteRTLM XCFramework.
+        return text
+#endif
     }
 }

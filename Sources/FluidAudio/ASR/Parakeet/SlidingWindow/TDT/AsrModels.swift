@@ -363,6 +363,92 @@ extension AsrModels {
         return asrModels
     }
 
+    /// Load a complete, pre-validated model directory without making any
+    /// network request. This is intended for applications that own model
+    /// delivery and integrity verification themselves.
+    public static func loadLocalOnly(
+        from directory: URL,
+        configuration: MLModelConfiguration? = nil,
+        version: AsrModelVersion = .v3,
+        encoderPrecision: ParakeetEncoderPrecision = .int8,
+        encoderComputeUnits: MLComputeUnits? = nil
+    ) async throws -> AsrModels {
+        let config = configuration ?? defaultConfiguration()
+        let fileNames = getModelFileNames(
+            version: version,
+            encoderPrecision: encoderPrecision
+        )
+        let requiredModels = getRequiredModels(
+            version: version,
+            encoderPrecision: encoderPrecision
+        )
+
+        for fileName in requiredModels {
+            let modelURL = directory.appendingPathComponent(fileName)
+            guard FileManager.default.fileExists(atPath: modelURL.path) else {
+                throw AsrModelsError.modelNotFound(fileName, modelURL)
+            }
+        }
+
+        func modelConfiguration(computeUnits: MLComputeUnits) -> MLModelConfiguration {
+            let modelConfig = MLModelConfiguration()
+            modelConfig.computeUnits = computeUnits
+            modelConfig.allowLowPrecisionAccumulationOnGPU =
+                config.allowLowPrecisionAccumulationOnGPU
+            return modelConfig
+        }
+
+        let preprocessor = try await MLModel.load(
+            contentsOf: directory.appendingPathComponent(Names.preprocessorFile),
+            configuration: modelConfiguration(computeUnits: .cpuOnly)
+        )
+
+        let encoder: MLModel?
+        if version.hasFusedEncoder {
+            encoder = nil
+        } else {
+            encoder = try await MLModel.load(
+                contentsOf: directory.appendingPathComponent(fileNames.encoder),
+                configuration: modelConfiguration(
+                    computeUnits: encoderComputeUnits ?? config.computeUnits
+                )
+            )
+        }
+
+        let decoder = try await MLModel.load(
+            contentsOf: directory.appendingPathComponent(fileNames.decoder),
+            configuration: modelConfiguration(computeUnits: config.computeUnits)
+        )
+        let joint = try await MLModel.load(
+            contentsOf: directory.appendingPathComponent(fileNames.joint),
+            configuration: modelConfiguration(computeUnits: config.computeUnits)
+        )
+
+        let ctcHeadURL = directory.appendingPathComponent(Names.ctcHeadFile)
+        let ctcHead: MLModel?
+        if FileManager.default.fileExists(atPath: ctcHeadURL.path) {
+            ctcHead = try await MLModel.load(
+                contentsOf: ctcHeadURL,
+                configuration: modelConfiguration(computeUnits: config.computeUnits)
+            )
+        } else {
+            ctcHead = nil
+        }
+
+        let models = AsrModels(
+            encoder: encoder,
+            preprocessor: preprocessor,
+            decoder: decoder,
+            joint: joint,
+            ctcHead: ctcHead,
+            configuration: config,
+            vocabulary: try loadVocabulary(from: directory, version: version),
+            version: version
+        )
+        logger.info("Loaded all ASR models from application-managed local assets")
+        return models
+    }
+
     private static func loadVocabulary(from directory: URL, version: AsrModelVersion) throws -> [Int: String] {
         let vocabularyFileName = getModelFileNames(version: version, encoderPrecision: .int8).vocabulary
         let vocabPath = repoPath(from: directory, version: version).appendingPathComponent(vocabularyFileName)

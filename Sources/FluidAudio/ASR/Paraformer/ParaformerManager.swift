@@ -474,14 +474,44 @@ public actor ParaformerManager {
                 out.append(Array(UnsafeBufferPointer(start: p + t * frameStride, count: dim)))
             }
         } else {
-            let p = arr.dataPointer.assumingMemoryBound(to: Float16.self)
+            let p = arr.dataPointer.assumingMemoryBound(to: UInt16.self)
             for t in 0..<count {
                 var r = [Float](repeating: 0, count: dim)
                 let base = t * frameStride
-                for d in 0..<dim { r[d] = Float(p[base + d]) }
+                for d in 0..<dim { r[d] = paraformerHalfBitsToFloat(p[base + d]) }
                 out.append(r)
             }
         }
         return out
     }
+}
+
+/// Decode IEEE-754 binary16 without depending on Swift.Float16, which is not
+/// available in an x86_64 macOS slice.
+@inline(__always)
+private func paraformerHalfBitsToFloat(_ bits: UInt16) -> Float {
+    let half = UInt32(bits)
+    let sign = (half & 0x8000) << 16
+    var exponent = Int32((half & 0x7C00) >> 10)
+    var mantissa = half & 0x03FF
+    let floatBits: UInt32
+
+    if exponent == 0 {
+        if mantissa == 0 {
+            floatBits = sign
+        } else {
+            exponent = 1
+            while (mantissa & 0x0400) == 0 {
+                mantissa <<= 1
+                exponent -= 1
+            }
+            mantissa &= 0x03FF
+            floatBits = sign | (UInt32(exponent + 112) << 23) | (mantissa << 13)
+        }
+    } else if exponent == 0x1F {
+        floatBits = sign | 0x7F80_0000 | (mantissa << 13)
+    } else {
+        floatBits = sign | (UInt32(exponent + 112) << 23) | (mantissa << 13)
+    }
+    return Float(bitPattern: floatBits)
 }

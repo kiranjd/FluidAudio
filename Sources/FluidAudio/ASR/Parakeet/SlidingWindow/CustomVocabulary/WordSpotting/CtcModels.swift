@@ -73,10 +73,14 @@ extension CtcModels {
     ///   - directory: Directory containing the CoreML bundles and vocab.json
     ///   - variant: Which CTC model variant this is (default: .ctc110m)
     /// - Returns: Loaded `CtcModels` instance.
-    public static func loadDirect(from directory: URL, variant: CtcModelVariant = .ctc110m) async throws -> CtcModels {
+    public static func loadDirect(
+        from directory: URL,
+        variant: CtcModelVariant = .ctc110m,
+        configuration: MLModelConfiguration? = nil
+    ) async throws -> CtcModels {
         logger.info("Loading CTC models directly from: \(directory.path)")
 
-        let config = defaultConfiguration()
+        let config = configuration ?? defaultConfiguration()
 
         // Load MelSpectrogram model
         let melPath = directory.appendingPathComponent("MelSpectrogram.mlmodelc")

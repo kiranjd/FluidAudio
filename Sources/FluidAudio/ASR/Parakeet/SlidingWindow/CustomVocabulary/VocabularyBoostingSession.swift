@@ -110,11 +110,6 @@ public struct VocabularyBoostingSession: Sendable {
             logger.info(
                 "Vocabulary rescoring applied \(rescoreOutput.replacements.count) replacement(s)"
             )
-            for replacement in rescoreOutput.replacements where replacement.shouldReplace {
-                logger.debug(
-                    "  '\(replacement.originalWord)' → '\(replacement.replacementWord ?? "")'"
-                )
-            }
             return rescoreOutput
         } catch {
             logger.warning("Vocabulary rescoring failed: \(error.localizedDescription)")
