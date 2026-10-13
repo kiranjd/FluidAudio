@@ -188,12 +188,12 @@ public struct CustomVocabularyContext: Sendable {
             let (sanitized, warnings) = sanitizeVocabularyTerm(term.text)
 
             if !warnings.isEmpty {
-                logger.warning("Term '\(term.text)': \(warnings.joined(separator: ", "))")
+                logger.warning("Vocabulary term sanitized: \(warnings.joined(separator: ", "))")
             }
 
             // Skip empty terms after sanitization
             guard !sanitized.isEmpty else {
-                logger.warning("Term '\(term.text)' is empty after sanitization, skipping")
+                logger.warning("Vocabulary term is empty after sanitization, skipping")
                 continue
             }
 

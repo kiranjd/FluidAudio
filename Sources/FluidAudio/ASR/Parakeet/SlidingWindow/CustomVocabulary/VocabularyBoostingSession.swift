@@ -60,8 +60,9 @@ public struct VocabularyBoostingSession: Sendable {
             let result = vocabulary.tokenizingMissingCtcTokens(using: tokenizer.encode)
             vocabulary = result.context
             logger.info("Tokenized \(result.tokenized) vocabulary term(s) with the CTC tokenizer")
-            for text in result.dropped {
-                logger.warning("Vocabulary term '\(text)' produced no CTC tokens; dropped")
+            if !result.dropped.isEmpty {
+                // Speakmac never logs customer vocabulary; report counts only.
+                logger.warning("\(result.dropped.count) vocabulary term(s) produced no CTC tokens; dropped")
             }
         }
         if vocabulary.terms.isEmpty {
@@ -136,11 +137,6 @@ public struct VocabularyBoostingSession: Sendable {
                 logger.info(
                     "Vocabulary rescoring applied \(rescoreOutput.replacements.count) replacement(s)"
                 )
-                for replacement in rescoreOutput.replacements where replacement.shouldReplace {
-                    logger.debug(
-                        "  '\(replacement.originalWord)' → '\(replacement.replacementWord ?? "")'"
-                    )
-                }
             }
             // The rescorer rebuilds its text from word timings (single spaces,
             // timing-backed words only). Only hand that back when it actually

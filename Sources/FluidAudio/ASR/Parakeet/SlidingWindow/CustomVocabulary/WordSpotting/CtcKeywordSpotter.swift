@@ -27,12 +27,8 @@ public struct CtcKeywordSpotter: Sendable {
     // 2s overlap at 16kHz = 32,000 samples (matches TDT chunking pattern)
     let chunkOverlapSamples: Int = 32_000
 
-    // Debug flag - enabled only in DEBUG builds
-    #if DEBUG
-    let debugMode: Bool = true  // Set to true locally for verbose logging
-    #else
+    // Speakmac never logs customer vocabulary or transcript fragments.
     let debugMode: Bool = false
-    #endif
 
     // Temperature for CTC softmax (higher = softer distribution, lower = more peaked)
     let temperature: Float = ContextBiasingConstants.ctcTemperature

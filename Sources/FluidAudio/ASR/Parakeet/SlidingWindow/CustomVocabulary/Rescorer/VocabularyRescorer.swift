@@ -187,11 +187,8 @@ public struct VocabularyRescorer: Sendable {
         self.useBKTree = useBKTree
         self.bkTree = bkTree
         self.bkTreeMaxDistance = bkTreeMaxDistance
-        #if DEBUG
-        self.debugMode = true  // Verbose logging in DEBUG builds
-        #else
+        // Speakmac never logs customer vocabulary or transcript fragments.
         self.debugMode = false
-        #endif
     }
 
     // MARK: - Result Types
