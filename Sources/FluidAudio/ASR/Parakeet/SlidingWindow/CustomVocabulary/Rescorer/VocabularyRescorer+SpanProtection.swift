@@ -80,9 +80,12 @@ extension VocabularyRescorer {
         // A span that is nothing but punctuation is not a word boundary to preserve.
         guard closing.count < last.count, opening.count < first.count else { return replacement }
 
+        // The term may already carry part of the run ("Inc." before ".,"), so add only the rest.
         var result = replacement
-        if !closing.isEmpty, !result.hasSuffix(closing) { result += closing }
-        if !opening.isEmpty, !result.hasPrefix(opening) { result = opening + result }
+        let closingKept = (0...closing.count).reversed().first { result.hasSuffix(closing.prefix($0)) } ?? 0
+        result += closing.dropFirst(closingKept)
+        let openingKept = (0...opening.count).reversed().first { result.hasPrefix(opening.suffix($0)) } ?? 0
+        result = String(opening.dropLast(openingKept)) + result
         return result
     }
 

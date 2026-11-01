@@ -145,6 +145,9 @@ final class VocabularySpanProtectionTests: XCTestCase {
             (["Chat,", "GPT"], "ChatGPT", "ChatGPT"),
             // Already carried by the term, or a possessive left to preservingPossessive.
             (["Yahoo!"], "Yahoo!", "Yahoo!"),
+            (["Yahoo!,"], "Yahoo!", "Yahoo!,"),
+            (["Acme", "Ink.,"], "Acme Inc.", "Acme Inc.,"),
+            (["¡¿Speak", "Mac?"], "¿Speakmac", "¡¿Speakmac?"),
             (["Quiltor's,"], "Quilter's", "Quilter's,"),
             (["Jonnes'"], "Jones'", "Jones'"),
             (["Speak", "Mac"], "Speakmac", "Speakmac"),
