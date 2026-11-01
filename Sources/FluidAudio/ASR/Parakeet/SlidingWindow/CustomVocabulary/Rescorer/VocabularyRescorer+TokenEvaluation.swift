@@ -310,8 +310,9 @@ extension VocabularyRescorer {
     ) {
         guard let firstIdx = candidate.spanIndices.first else { return }
 
-        // Replace first word with the replacement, mark rest as empty
-        modifiedWords[firstIdx].word = result.replacement
+        // Replace first word with the replacement, keeping the span's outer punctuation; mark rest as empty
+        let spanWords = candidate.spanIndices.map { modifiedWords[$0].word }
+        modifiedWords[firstIdx].word = Self.preservingBoundaryPunctuation(result.replacement, spanWords: spanWords)
         for idx in candidate.spanIndices.dropFirst() {
             modifiedWords[idx].word = ""  // Will be filtered out
         }

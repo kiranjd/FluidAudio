@@ -132,6 +132,32 @@ final class VocabularySpanProtectionTests: XCTestCase {
         }
     }
 
+    func testReplacementsKeepTheSpansOuterPunctuation() {
+        let cases: [(span: [String], term: String, expected: String)] = [
+            (["Speak", "Mac,"], "Speakmac", "Speakmac,"),
+            (["Speak", "Mac."], "Speakmac", "Speakmac."),
+            (["Mac?"], "Mack", "Mack?"),
+            (["(Speak", "Mac)"], "Speakmac", "(Speakmac)"),
+            (["“Speak", "Mac,”"], "Speakmac", "“Speakmac,”"),
+            (["Mac..."], "Mack", "Mack..."),
+            // Punctuation between the span's words goes: the span becomes one term.
+            (["Chat,", "GPT,"], "ChatGPT", "ChatGPT,"),
+            (["Chat,", "GPT"], "ChatGPT", "ChatGPT"),
+            // Already carried by the term, or a possessive left to preservingPossessive.
+            (["Yahoo!"], "Yahoo!", "Yahoo!"),
+            (["Quiltor's,"], "Quilter's", "Quilter's,"),
+            (["Jonnes'"], "Jones'", "Jones'"),
+            (["Speak", "Mac"], "Speakmac", "Speakmac"),
+            (["Speak", "", "Mac,"], "Speakmac", "Speakmac,"),
+            ([","], "Speakmac", "Speakmac"),
+        ]
+        for (span, term, expected) in cases {
+            XCTAssertEqual(
+                VocabularyRescorer.preservingBoundaryPunctuation(term, spanWords: span), expected,
+                "\(span) → \(term)")
+        }
+    }
+
     func testCanonicalMatchAcceptsPossessivesOfTheTermOnly() {
         XCTAssertTrue(VocabularyRescorer.isCanonicalMatch("Quilter's", canonical: "Quilter"))
         XCTAssertTrue(VocabularyRescorer.isCanonicalMatch("Quilter’s,", canonical: "Quilter"))
